@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <algorithm>
+#include <functional>
 
 #include "event_selector.h"
 
@@ -22,19 +23,6 @@ void EventSelector::add(FdHandler* handler)
         max_fd = fd;
 }
 
-//helper func for finding max descriptor
-int get_max_fd(const std::vector<FdHandler*>& vec)
-{
-    int max = 0;
-    int fd;
-    for (auto& fdhandl : vec){
-        fd = fdhandl->get_fd();
-        if (max < fd)
-            max = fd;
-    }
-    return max;
-}
-
 void EventSelector::remove(FdHandler* handler)
 {
     int fd = handler->get_fd();
@@ -44,7 +32,7 @@ void EventSelector::remove(FdHandler* handler)
     descriptors.erase(std::remove(descriptors.begin(), descriptors.end(), *item), descriptors.end());
     delete handler;
     if (fd == max_fd)
-        max_fd = get_max_fd(descriptors);
+        max_fd = (*std::max_element(descriptors.cbegin(), descriptors.cend(), [](FdHandler* a, FdHandler* b){return a->get_fd() < b->get_fd();}))->get_fd();
 }
 
 //endless cycle using the system call "select"
